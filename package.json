@@ -1,0 +1,30 @@
+{
+  "name": "taskflow",
+  "version": "2.0.0",
+  "description": "TaskFlow – full-stack Kanban board: Express REST API, SQLite, cookie-based auth, vanilla JS client, Docker and CI.",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "test": "node --test \"tests/*.test.js\""
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "keywords": [
+    "kanban",
+    "express",
+    "sqlite",
+    "rest-api",
+    "jwt",
+    "portfolio",
+    "full-stack"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.4",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3"
+  }
+}

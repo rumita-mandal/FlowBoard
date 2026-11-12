@@ -1,0 +1,14 @@
+services:
+  taskflow:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in your shell or a .env file}
+      COOKIE_SECURE: "false"   # plain-http local run; remove behind HTTPS
+    volumes:
+      - taskflow-data:/data
+    restart: unless-stopped
+
+volumes:
+  taskflow-data:

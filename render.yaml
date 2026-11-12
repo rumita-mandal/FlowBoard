@@ -1,0 +1,19 @@
+# Render Blueprint: Dashboard -> New -> Blueprint -> pick this repo.
+# NOTE: SQLite needs a persistent disk, which Render only offers on paid instances.
+# On the free plan the app works but data resets when the instance restarts (fine for a
+# portfolio demo: guest sessions are throwaway anyway). To keep data, switch to the
+# paid plan + disk block below.
+services:
+  - type: web
+    name: taskflow
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+    # For persistence, replace "plan: free" above with "plan: starter" and add:
+    # disk:
+    #   name: taskflow-data
+    #   mountPath: /data
+    #   sizeGB: 1

@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TaskFlow – Kanban Task Board</title>
+  <meta name="description" content="TaskFlow is a fast, offline-first Kanban board with drag and drop, search, filters, undo and JSON import/export.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Cpath d='M18 33l9 9 19-21' fill='none' stroke='white' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-view="loading">
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">✓</span>
+      <h1>TaskFlow</h1>
+    </div>
+
+    <div class="controls app-only">
+      <label class="field search">
+        <span class="sr-only">Search tasks</span>
+        <input id="search" type="search" placeholder="Search tasks…  ( / )" autocomplete="off">
+      </label>
+      <label class="field">
+        <span class="sr-only">Filter by priority</span>
+        <select id="filter-priority">
+          <option value="all">All priorities</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+      </label>
+      <label class="field">
+        <span class="sr-only">Sort tasks</span>
+        <select id="sort">
+          <option value="manual">Manual order</option>
+          <option value="priority">Priority</option>
+          <option value="due">Due date</option>
+          <option value="created">Newest first</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="actions">
+      <button id="btn-export" class="btn app-only" type="button" title="Download all tasks as JSON">Export</button>
+      <button id="btn-import" class="btn app-only" type="button" title="Load tasks from a JSON file">Import</button>
+      <input id="import-file" type="file" accept="application/json,.json" hidden>
+      <button id="btn-theme" class="btn icon" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+      <span id="user-chip" class="user-chip app-only" title="Signed in"></span>
+      <button id="btn-logout" class="btn app-only" type="button">Sign out</button>
+      <button id="btn-new" class="btn primary app-only" type="button">+ New task <kbd>n</kbd></button>
+    </div>
+  </header>
+
+  <main class="auth" id="auth">
+    <div class="auth-card">
+      <h2 id="auth-title">Sign in to TaskFlow</h2>
+      <p class="auth-sub">Your boards are saved to your account and available on any device.</p>
+      <form id="auth-form" novalidate>
+        <label class="form-row">Email
+          <input id="a-email" name="email" type="email" autocomplete="email" maxlength="254" required>
+        </label>
+        <label class="form-row">Password <small id="a-hint" hidden>(at least 8 characters)</small>
+          <input id="a-password" name="password" type="password" autocomplete="current-password" maxlength="128" required>
+        </label>
+        <p id="auth-errors" class="form-errors" role="alert" hidden></p>
+        <button id="auth-submit" class="btn primary block" type="submit">Sign in</button>
+      </form>
+      <button id="auth-switch" class="link-btn" type="button">New here? Create an account</button>
+      <div class="divider"><span>or</span></div>
+      <button id="btn-guest" class="btn block" type="button">Try the live demo (no sign-up)</button>
+    </div>
+  </main>
+
+  <main class="container app-only" id="app-main">
+    <section class="stats" aria-label="Progress summary">
+      <div class="stat"><span class="stat-value" id="stat-total">0</span><span class="stat-label">Total</span></div>
+      <div class="stat"><span class="stat-value" id="stat-doing">0</span><span class="stat-label">In progress</span></div>
+      <div class="stat"><span class="stat-value" id="stat-done">0</span><span class="stat-label">Done</span></div>
+      <div class="stat warn"><span class="stat-value" id="stat-overdue">0</span><span class="stat-label">Overdue</span></div>
+      <div class="progress-wrap">
+        <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress">
+          <div class="progress-bar" id="progress-bar"></div>
+        </div>
+        <span class="progress-label" id="progress-label">0% complete</span>
+      </div>
+    </section>
+
+    <section class="board" id="board" aria-label="Kanban board">
+      <div class="column" data-status="todo">
+        <div class="column-head">
+          <h2>To Do <span class="count" id="count-todo">0</span></h2>
+          <button class="add-in" type="button" data-status="todo" aria-label="Add task to To Do">+</button>
+        </div>
+        <div class="card-list" id="list-todo" data-status="todo"></div>
+      </div>
+      <div class="column" data-status="doing">
+        <div class="column-head">
+          <h2>In Progress <span class="count" id="count-doing">0</span></h2>
+          <button class="add-in" type="button" data-status="doing" aria-label="Add task to In Progress">+</button>
+        </div>
+        <div class="card-list" id="list-doing" data-status="doing"></div>
+      </div>
+      <div class="column" data-status="done">
+        <div class="column-head">
+          <h2>Done <span class="count" id="count-done">0</span></h2>
+          <button class="add-in" type="button" data-status="done" aria-label="Add task to Done">+</button>
+        </div>
+        <div class="card-list" id="list-done" data-status="done"></div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="task-dialog" aria-labelledby="dialog-title">
+    <form id="task-form" novalidate>
+      <h2 id="dialog-title">New task</h2>
+
+      <label class="form-row">Title
+        <input id="f-title" name="title" type="text" maxlength="80" required autocomplete="off">
+      </label>
+
+      <label class="form-row">Description
+        <textarea id="f-description" name="description" rows="3" maxlength="500"></textarea>
+      </label>
+
+      <div class="form-grid">
+        <label class="form-row">Priority
+          <select id="f-priority" name="priority">
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+          </select>
+        </label>
+        <label class="form-row">Status
+          <select id="f-status" name="status">
+            <option value="todo">To Do</option>
+            <option value="doing">In Progress</option>
+            <option value="done">Done</option>
+          </select>
+        </label>
+        <label class="form-row">Due date
+          <input id="f-due" name="due" type="date">
+        </label>
+      </div>
+
+      <label class="form-row">Tags <small>(comma separated, max 5)</small>
+        <input id="f-tags" name="tags" type="text" placeholder="frontend, bug, api" autocomplete="off">
+      </label>
+
+      <p id="form-errors" class="form-errors" role="alert" hidden></p>
+
+      <div class="dialog-actions">
+        <button id="btn-cancel" class="btn" type="button">Cancel</button>
+        <button id="btn-save" class="btn primary" type="submit">Save task</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden>
+    <span id="toast-text"></span>
+    <button id="toast-action" class="toast-action" type="button" hidden>Undo</button>
+  </div>
+
+  <noscript><p class="noscript">TaskFlow needs JavaScript enabled to run.</p></noscript>
+
+  <script src="src/store.js"></script>
+  <script src="src/app.js"></script>
+</body>
+</html>

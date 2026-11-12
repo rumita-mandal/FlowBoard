@@ -1,0 +1,31 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm audit --omit=dev --audit-level=high
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t taskflow .
+      - name: Smoke test container
+        run: |
+          docker run -d --name tf -p 3000:3000 -e JWT_SECRET=ci-secret-ci-secret -e COOKIE_SECURE=false taskflow
+          for i in $(seq 1 20); do curl -fs localhost:3000/healthz && exit 0; sleep 1; done
+          docker logs tf; exit 1
